@@ -106,6 +106,7 @@ let generate_all_c_productions match_tokens match_rules parsed_table =
   match parsed_table with
   | Error e -> Error e
   | Ok (header, rows) ->
+      let header = List.tl header in
       let productions =
         List.concat_map
           (fun row ->
