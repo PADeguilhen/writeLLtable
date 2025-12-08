@@ -83,18 +83,20 @@ let htmltable =
   <?> "LL(1) parsing table"
 
 let generate_c_production prod terminal match_tokens match_rules =
+  let fiRhs =
+    List.filter (function Terminal "ε" -> false | _ -> true) prod.rhs
+  in
   let items =
     List.map
       (function
-        | Terminal "ε" -> Printf.sprintf "{}"
         | Terminal t ->
             Printf.sprintf "{.token = %s, .type = TOKEN}" (match_tokens t)
         | NonTerminal nt ->
             Printf.sprintf "{.rule = %s, .type = RULE}" (match_rules nt))
-      prod.rhs
+      fiRhs
   in
   let items_str = String.concat ", " items in
-  let count = List.length prod.rhs in
+  let count = List.length fiRhs in
   let lhs_c = match_rules prod.lhs in
   let terminal_c = match_tokens terminal in
   Printf.sprintf
@@ -110,24 +112,31 @@ let generate_all_c_productions match_tokens match_rules parsed_table =
       let productions =
         List.concat_map
           (fun row ->
-            List.mapi
-              (fun col_idx prod_opt ->
-                match prod_opt with
-                | None -> None
-                | Some prod ->
-                    (* Get the terminal from the header at this column index *)
-                    if col_idx < List.length header then
-                      let terminal = List.nth header col_idx in
-                      let terminal_str =
-                        match terminal with
-                        | Terminal s -> s
-                        | NonTerminal s -> s
-                      in
-                      Some
-                        (generate_c_production prod terminal_str match_tokens
-                           match_rules)
-                    else None)
-              row)
+            let prodnameptr : string ref = ref " " in
+            let lst =
+              List.mapi
+                (fun col_idx prod_opt ->
+                  match prod_opt with
+                  | None -> None
+                  | Some prod ->
+                      (* Get the terminal from the header at this column index *)
+                      if !prodnameptr <> prod.lhs then prodnameptr := prod.lhs;
+                      if col_idx < List.length header then
+                        let terminal = List.nth header col_idx in
+                        let terminal_str =
+                          match terminal with
+                          | Terminal s -> s
+                          | NonTerminal s -> s
+                        in
+                        Some
+                          (generate_c_production prod terminal_str match_tokens
+                             match_rules)
+                      else None)
+                row
+            in
+            Some
+              (Printf.sprintf "\n\t// productions %s" (match_rules !prodnameptr))
+            :: lst)
           rows
       in
       let filtered_productions = List.filter_map (fun x -> x) productions in
