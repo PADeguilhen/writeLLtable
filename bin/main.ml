@@ -9,14 +9,14 @@ let match_token = function
   | "/" -> "TOKEN_BINOP_DIV"
   | "%" -> "TOKEN_BINOP_MOD"
   | "||" -> "TOKEN_BINOP_OR"
-  | "&&" -> "TOKEN_BINOP_AND"
+  | "&amp;&amp;" -> "TOKEN_BINOP_AND"
   | "=" -> "TOKEN_BINOP_EQ"
   | "==" -> "TOKEN_BINOP_2EQUAL"
   | "!=" -> "TOKEN_BINOP_DIFF"
-  | "<" -> "TOKEN_BINOP_INF"
-  | ">" -> "TOKEN_BINOP_SUP"
-  | "<=" -> "TOKEN_BINOP_INFEG"
-  | ">=" -> "TOKEN_BINOP_SUPEG"
+  | "&lt;" -> "TOKEN_BINOP_INF"
+  | "&gt;" -> "TOKEN_BINOP_SUP"
+  | "&lt;=" -> "TOKEN_BINOP_INFEG"
+  | "&gt;=" -> "TOKEN_BINOP_SUPEG"
   | "(" -> "TOKEN_LPAR"
   | ")" -> "TOKEN_RPAR"
   | "class" -> "TOKEN_CLASS"
@@ -42,17 +42,21 @@ let match_token = function
   | "new" -> "TOKEN_NEW"
   | "null" -> "TOKEN_NULL"
   | "public" -> "TOKEN_PUBLIC"
+  | "private" -> "TOKEN_PRIVATE"
   | "return" -> "TOKEN_RETURN"
   | "static" -> "TOKEN_STATIC"
   | "this" -> "TOKEN_THIS"
   | "true" -> "TOKEN_TRUE"
   | "void" -> "TOKEN_VOID"
   | "ident_type" -> "TOKEN_ID_TYPE"
-  | a -> String.uppercase_ascii a
+  | a ->     
+    Printf.eprintf "WARNING: token %s undefined!\n" a;
+    (String.uppercase_ascii a)
+
 
 let match_rule = function
   | "file" -> "FIL"
-  | "class_liste" -> "CLASS_LIST"
+  | "class_list" -> "CLASS_LIST"
   | "classe" -> "CLASSE"
   | "public_opt" -> "PUBLIC_OPT"
   | "static_opt" -> "STATIC_OPT"
@@ -61,7 +65,7 @@ let match_rule = function
   | "decl_type" -> "DECL_TYPE"
   | "decl_type_ident" -> "DECL_TYPE_IDENT"
   | "decl" -> "DECLA"
-  | "decl_after_type" -> "DECL_PUBLIC"
+  | "decl_public" -> "DECL_PUBLIC"
   | "constructeur_tail" -> "CONST_TAIL"
   | "constructeur" -> "CONST"
   | "params_opt" -> "PARAMS_OPT"
@@ -71,7 +75,7 @@ let match_rule = function
   | "expr_opt" -> "EXPR_OPT"
   | "expr" -> "EXPR"
   | "assignement" -> "ASSIGN"
-  | "assignement_opt" -> "ASSIGN_ID"
+  | "assignement_ident" -> "ASSIGN_ID"
   | "lor_expr" -> "LOR_EXPR"
   | "lor_expr_suite" -> "LOR_EXPR_SUITE"
   | "land_expr" -> "LAND_EXPR"
@@ -83,7 +87,7 @@ let match_rule = function
   | "add" -> "ADD"
   | "add_suite" -> "ADD_SUITE"
   | "mult_expr" -> "MULT"
-  | "mult_expr_suite" -> "MULT_SUITE"
+  | "mult_suite" -> "MULT_SUITE"
   | "unary" -> "UNARY"
   | "cast_or_postfix" -> "C_O_P"
   | "cast_or_postfix_par" -> "C_O_P_PAR"
@@ -96,10 +100,24 @@ let match_rule = function
   | "lexpr_expr" -> "LEXPR_EXPR"
   | "stmt_list" -> "STMT_LIST"
   | "stmt" -> "STMT"
-  | "smt_type_ident" -> "STMT_TYPE_IDENT"
+  | "stmt_type_ident" -> "STMT_TYPE_IDENT"
   | "stmt_if" -> "STMT_IF"
   | "block" -> "BLOCK"
-  | a -> String.uppercase_ascii a
+  | "methode" -> "METHODE"
+  | "const_or_meth" -> "CONST_OR_METH"
+  | "cro_opt" -> "CRO_OPT"
+  | a ->
+    Printf.eprintf "WARNING: rule %s undefined!\n" a;
+    (String.uppercase_ascii a)
+
+let wrap_around = 
+  Printf.sprintf 
+      "#include \"prod_table.h\"\n\
+        \n\
+        void init_prod_table(void)\n\
+        {\
+        %s\n\
+        }"
 
 let () =
   let html = Sys.argv.(1) in
@@ -112,9 +130,10 @@ let () =
   in
 
   let result =
-    parser htmltable input |> generate_all_c_productions match_token match_rule
+    parser htmltable input 
+    |> generate_all_c_productions match_token match_rule
   in
 
   match result with
-  | Ok c_code -> print_endline c_code
+  | Ok c_code -> print_endline (wrap_around c_code)
   | Error e -> Printf.eprintf "Error: %s\n" e

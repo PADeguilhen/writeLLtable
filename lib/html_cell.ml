@@ -75,11 +75,13 @@ let tableHead =
 let tableBody = tbody @@ many tableRow <?> "table body with production rows"
 
 let htmltable =
-  table
-  @@ lift2
-       (fun a b -> (a, b))
-       (tableHead <?> "parsing table header")
-       (tableBody <?> "parsing table body")
+  table @@
+  lift4
+       (fun _  _ head body -> (head, body))
+       (colgroup token <?> "first <colgroup> tag")
+       (colgroup token <?> "second <colgroup> tag")
+       (tableHead <?> "table header")
+       (tableBody <?> "table body")
   <?> "LL(1) parsing table"
 
 let generate_c_production prod terminal match_tokens match_rules =
